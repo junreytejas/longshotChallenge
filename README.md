@@ -18,7 +18,6 @@ Here’s the initial JavaScript code for Phase 1:
     try {
         const fData = await fetch('https://challenge.longshotsystems.co.uk/go').then(res => res.text());
 
-        // Parse the fetched HTML string into a DOM object
         const parser = new DOMParser();
         const doc = parser.parseFromString(fData, 'text/html');
 
@@ -29,11 +28,11 @@ Here’s the initial JavaScript code for Phase 1:
 
         // Initial setup after the document is fully loaded
         window.onload = function() {
-            // Access elements from the new content (if needed)
+            // Access elements from the new content 
             const answer = document.getElementById('answer');
             const name = document.getElementById('name');
 
-            // Set values for answer and name inputs (if needed)
+            // Set values for answer and name inputs 
             const numberBoxes = Array.from(doc.querySelectorAll('[id^="number-box-"]'));
             const answerValue = numberBoxes.map(box => box.textContent.trim()).join('');
 
