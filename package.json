@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "fs": "^0.0.1-security",
+    "jsdom": "^24.1.0",
+    "node-fetch": "^3.3.2",
+    "puppeteer": "^22.11.0",
+    "ws": "^8.17.0"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.7"
+  }
+}
