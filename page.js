@@ -1,14 +1,12 @@
-const fs = require('fs');
 const { Buffer } = require('buffer');
 const puppeteer = require('puppeteer');
-const WebSocket = require('ws'); 
 
 const numRegisters = 16;
 let registers = new Array(numRegisters).fill(0);
 
-console.log("initial",{registers})
 
  async function fetchMessages (){
+
   const encodedMessages = [];
 
   const browser = await puppeteer.launch({ headless: false });
@@ -41,11 +39,10 @@ console.log("initial",{registers})
 
   // Set up WebSocket listener
   const client = await page.createCDPSession();
-  // await client.send('Network.enable');
+  await client.send('Network.enable');
 
   client.on('Network.webSocketFrameReceived', ({ response }) => {
     const { payloadData } = response;
-    console.log('WebSocket message received:', payloadData);
     encodedMessages.push(payloadData);
   });
 
@@ -59,7 +56,6 @@ console.log("initial",{registers})
 
   // decode the messages from the websocket
   const decodedMessages = readAndDecodeMessages(encodedMessages);
-  console.log('Decoded messages:', decodedMessages);
 
   // loop through the commands and execute
   decodedMessages.forEach(command => {
@@ -71,7 +67,6 @@ console.log("initial",{registers})
     console.log(`Accumulator: ${acc}, Current Value: ${curr}`);
     return acc + curr;
   }, 0);
-  console.log('Sum of register values:', sum, {registers});
 
   // Encode the sum of registers in Base64
   const encodedBase64 = btoa(sum)
@@ -147,7 +142,6 @@ function addCommand(parts) {
   const srcReg = parseInt(parts[2].substring(1)); // Extract source number
   const destReg = parseInt(parts[3].substring(1)); // Extract destination number
 
-  console.log('add',registers[destReg], registers[srcReg], value)
   registers[destReg] = registers[srcReg] + value;
 }
 
@@ -156,7 +150,6 @@ function moveCommand(parts) {
   const srcReg = parseInt(parts[1].substring(1)); // Extract source number
   const destReg = parseInt(parts[2].substring(1)); // Extract destination number
 
-  console.log('move',registers[destReg], registers[srcReg])
   registers[destReg] = registers[srcReg];
 }
 
@@ -165,7 +158,6 @@ function storeCommand(parts) {
   const value = parseInt(parts[1]);
   const destReg = parseInt(parts[2].substring(1)); // Extract destination number to overide
 
-  console.log('store',registers[destReg], value)
   registers[destReg] = value;
 }
 
