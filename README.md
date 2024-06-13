@@ -49,11 +49,13 @@ Here’s the initial JavaScript code for Phase 1:
 })();
 ```
 
+
 **Phase 2:**
-For Phase 2, I initially continued with JavaScript in Chrome snippets but encountered issues detecting page navigation events. Thus, I transitioned to using Puppeteer in Node.js to automate the process effectively.
+
+For Phase 2, I initially continued with JavaScript in Chrome snippets but encountered issues detecting page navigation events that were using `window.location()`. I then transitioned to using Puppeteer in Node.js to automate the process.
 
 The solution involves:
-- Using Puppeteer to control a browser.
+- re-writing the Phase 1 solution to use Puppeteer and control a browser.
 - Extracting information from the page.
 - Handling WebSocket communications.
 - Executing commands based on received messages.
@@ -68,7 +70,7 @@ The solution involves:
 2. **Install Dependencies**
    Ensure you have Node.js installed, then run:
    ```bash
-   npm install puppeteer ws
+   npm install puppeteer
    ```
 
 ### Usage
@@ -82,7 +84,6 @@ node page.js
 #### Initial Setup
 The code begins by setting up the necessary libraries and initializing an array to hold register values:
 ```javascript
-const { Buffer } = require('buffer');
 const puppeteer = require('puppeteer');
 
 const numRegisters = 16;
@@ -93,13 +94,15 @@ let registers = new Array(numRegisters).fill(0);
 The `fetchMessages` function is the core of the solution, orchestrating the browser automation and communication handling:
 ```javascript
 async function fetchMessages() {
-  const encodedMessages = [];
+
   const browser = await puppeteer.launch({ headless: false });
   const page = await browser.newPage();
 
   await page.goto('https://challenge.longshotsystems.co.uk/go');
 
   // Gather the answers for phase 1
+  const encodedMessages = [];
+
   const htmlDom = await page.evaluate(() => {
     return document.querySelector('.number-panel').textContent.trim().replace(/\s+/g, '');
   });
