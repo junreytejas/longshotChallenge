@@ -51,7 +51,9 @@ Here’s the initial JavaScript code for Phase 1:
 
 
 **Phase 2:**
-
+```bash
+URL: https://challenge.longshotsystems.co.uk/ok
+```
 For Phase 2, I initially continued with JavaScript in Chrome snippets but encountered issues detecting page navigation events that were using `window.location()`. I then transitioned to using Puppeteer in Node.js to automate the process.
 
 The solution involves:
