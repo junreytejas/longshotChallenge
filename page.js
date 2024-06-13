@@ -1,4 +1,3 @@
-const { Buffer } = require('buffer');
 const puppeteer = require('puppeteer');
 
 const numRegisters = 16;
@@ -64,7 +63,6 @@ let registers = new Array(numRegisters).fill(0);
 
   // Calculate sum of registers
   const sum = registers.reduce((acc, curr) => {
-    console.log(`Accumulator: ${acc}, Current Value: ${curr}`);
     return acc + curr;
   }, 0);
 
