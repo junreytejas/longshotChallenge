@@ -1,0 +1,36 @@
+(async () => {
+    try {
+        const fData = await fetch('https://challenge.longshotsystems.co.uk/go').then(res => res.text());
+
+        // Parse the fetched HTML string into a DOM object
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(fData, 'text/html');
+
+        // Write the fetched content to the current document
+        document.open();
+        document.write(doc.documentElement.innerHTML); // Use innerHTML
+        document.close();
+
+
+        // Initial setup after the document is fully loaded
+        window.onload = function() {
+            // Access elements from the new content (if needed)
+            const answer = document.getElementById('answer');
+            const name = document.getElementById('name');
+
+            // Set values for answer and name inputs (if needed)
+            const numberBoxes = Array.from(doc.querySelectorAll('[id^="number-box-"]'));
+            const answerValue = numberBoxes.map(box => box.textContent.trim()).join('');
+
+            answer.value = answerValue;
+            name.value = 'Junrey Tejas';
+
+            // Call submit function
+            submit();
+        };
+
+     
+    } catch (error) {
+        console.error('Error fetching or processing data:', error);
+    }
+})();
