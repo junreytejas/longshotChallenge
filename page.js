@@ -10,31 +10,34 @@ console.log("initial",{registers})
 
  async function fetchMessages (){
   const encodedMessages = [];
+
   const browser = await puppeteer.launch({ headless: false });
+
   const page = await browser.newPage();
+
   await page.goto('https://challenge.longshotsystems.co.uk/go');
 
   // gather the answers for phase 1
-  const textContent = await page.evaluate(() => {
+  const htmlDom = await page.evaluate(() => {
     return document.querySelector('.number-panel').textContent.trim().replace(/\s+/g, '');
   });
+
+    // assign name
+    await page.$eval("#name", element => element.value = "Junrey Tejas");
+
 
   // assign the numbers
   await page.$eval('#answer', (element, text) => {
     element.value = text;
-  }, textContent);
+  }, htmlDom);
 
-  // asign name
-  await page.$eval("#name", element => element.value = "Junrey Tejas");
 
   // call submit()
   await page.$eval(".answer-panel button", buttonElement => buttonElement.click());
 
   // wait 2 page navigations
   await page.waitForNavigation();
-  console.log('page changed')
   await page.waitForNavigation();
-  console.log('page changed')
 
   // Set up WebSocket listener
   const client = await page.createCDPSession();
@@ -82,7 +85,7 @@ console.log("initial",{registers})
     // Handle any errors that occur during sending or receiving the frame
     console.error('Error sending WebSocket frame:', error);
   }).finally(
-    console.log("message sent and received response")
+    console.log("completed execution.")
   )
 
   client.on('Network.webSocketFrameReceived', ({ response }) => {
