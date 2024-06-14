@@ -83,176 +83,169 @@ node page.js
 ### Code Explanation
 
 #### Initial Setup
-The code begins by setting up the necessary libraries and initializing an array to hold register values:
+The code begins by setting up the puppeteer library:
 ```javascript
 const puppeteer = require('puppeteer');
-
-const numRegisters = 16;
-let registers = new Array(numRegisters).fill(0);
 ```
 
 #### Main Function: `fetchMessages`
-The `fetchMessages` function is the core of the solution, orchestrating the browser automation and communication handling:
+The `fetchMessages` function is the core of the solution wraps the entire web scraping logic/commands:
 ```javascript
-async function fetchMessages() {
+async function fetchMessages() 
+```
 
-  const browser = await puppeteer.launch({ headless: false });
+#### Setting up our puppeteer environment
+```javascript
+const browser = await puppeteer.launch({
+    headless: false,
+    args: ['--disable-gpu', '--disable-dev-shm-usage', '--no-sandbox']
+  });
+
   const page = await browser.newPage();
 
+  await page.setRequestInterception(true);
+  page.on('request', (req) => {
+    if (req.resourceType() === 'image' || req.resourceType() === 'stylesheet') {
+      req.abort();
+    } else {
+      req.continue();
+    }
+  });
+```
+#### Phase 1: 
+Automates capturing the data from the dom, filling up the 'answer' and 'name' fields in the form, and then hitting the submit button 
+```javascript
   await page.goto('https://challenge.longshotsystems.co.uk/go');
-
-  // Gather the answers for phase 1
-  const encodedMessages = [];
 
   const htmlDom = await page.evaluate(() => {
     return document.querySelector('.number-panel').textContent.trim().replace(/\s+/g, '');
   });
 
-  // Assign name
   await page.$eval("#name", element => element.value = "Junrey Tejas");
-
-  // Assign the numbers
   await page.$eval('#answer', (element, text) => {
     element.value = text;
   }, htmlDom);
-
-  // Call submit()
   await page.$eval(".answer-panel button", buttonElement => buttonElement.click());
 
-  // Wait for 2 page navigations
   await page.waitForNavigation();
   await page.waitForNavigation();
-
-  // Set up WebSocket listener
-  const client = await page.createCDPSession();
-  await client.send('Network.enable');
-
-  client.on('Network.webSocketFrameReceived', ({ response }) => {
-    const { payloadData } = response;
-    encodedMessages.push(payloadData);
-  });
-
-  // Wait for messages
-  await page.evaluate(() => {
-    return new Promise(resolve => {
-      setTimeout(resolve, 2000);
-    });
-  });
-
-  // Decode the messages from the WebSocket
-  const decodedMessages = readAndDecodeMessages(encodedMessages);
-
-  // Loop through the commands and execute
-  decodedMessages.forEach(command => {
-    executeCommand(command);
-  });
-
-  // Calculate sum of registers
-  const sum = registers.reduce((acc, curr) => {
-    console.log(`Accumulator: ${acc}, Current Value: ${curr}`);
-    return acc + curr;
-  }, 0);
-
-  // Encode the sum of registers in Base64
-  const encodedBase64 = btoa(sum)
-  console.log('Encoded Base64:', encodedBase64);
-
-  // Send the encodedBase64 to the WebSocket
-  await client.send('Network.webSocketFrameSent', encodedBase64).then((response) => {
-    console.log('Response received:', response);
-  }).catch((error) => {
-    console.error('Error sending WebSocket frame:', error);
-  }).finally(() => {
-    console.log("Completed execution.");
-  });
-
-  client.on('Network.webSocketFrameReceived', ({ response }) => {
-    console.log('WebSocket message received:', response);
-  });
-}
 ```
-
-#### Supporting Functions
-Several supporting functions help decode messages and execute commands:
-
-**Decoding Base64 Messages:**
-The `decodeBase64` function decodes Base64 encoded messages:
+#### Phase 2: 
+Listen and decode the websocket messages, execute the commands to update the registers, then sum the registers. 
 ```javascript
-function decodeBase64(encodedMessage) {
-  const decodedMessage = atob(encodedMessage);
-  return decodedMessage;
-}
-```
+  let ableToFetch = false;
 
-**Reading and Decoding Messages:**
-The `readAndDecodeMessages` function processes an array of messages, decoding each one:
-```javascript
-function readAndDecodeMessages(messages) {
   try {
-    const decodedMessages = messages.map(encodedMessage => {
-      const cleanedMessage = encodedMessage.replace(/^ok:10 /, '').trim();
-      return decodeBase64(cleanedMessage);
+    ableToFetch = await page.evaluate(async () => {
+```
+Initialize the registers using Array and fill them with zero values
+```javascript
+      const numRegisters = 16;
+      let registers = new Array(numRegisters).fill(0);
+
+      return await new Promise((resolve, reject) => {
+```
+Added event listener for websocket incoming message
+1. decodes the received message
+2. check if the message contains "END"
+3. if it does:
+   - sum the registers using `reduce()` function
+   - encode the result back to Base64
+   - send it back to the websocket
+4. if it doesn't:
+   - pass the decoded message and registers to the `executeCommand` function
+```javascript
+        window.ws.onmessage = function (event) {
+
+          const decodedMessage = atob(event.data).trim()
+
+          console.log(decodedMessage)
+
+          if (decodedMessage.toString() == "\"END\"") {
+            console.log("processing end message.")
+            const sum = registers.reduce((acc, curr) => acc + curr, 0);
+
+            const encodedBase64 = btoa(sum.toString());
+
+            console.log('Encoded Base64:', encodedBase64, sum);
+
+            window.ws.send(encodedBase64)
+          } else {
+            console.log("executing command")
+            executeCommand(decodedMessage, registers)
+          }
+
+          resolve(true);
+
+        };
+
+        window.ws.onclose = function (CloseEvent) {
+          console.log(CloseEvent);
+          reject('WebSocket closed. Code: ' + CloseEvent.code);
+        };
+
+      });
+```
+This `executeComand()` function processes the command string and updates the registers
+```javascript
+      function executeCommand(command, registers) {
+        const parts = command.replace(/"/g, '').split(' ');
+        const opcode = parts[0];
+
+        switch (opcode) {
+          case 'ADD':
+            addCommand(parts, registers);
+            break;
+          case 'MOV':
+            moveCommand(parts, registers);
+            break;
+          case 'STORE':
+            storeCommand(parts, registers);
+            break;
+          default:
+            // console.error(`Unknown instruction: ${command}`);
+        }
+      }
+
+      function addCommand(parts, registers) {
+        const value = parseInt(parts[1]); // Extract the value
+        const srcReg = parseInt(parts[2].substring(1)); // Extract source number
+        const destReg = parseInt(parts[3].substring(1)); // Extract destination number
+
+        registers[destReg] = registers[srcReg] + value;
+      }
+
+      function moveCommand(parts, registers) {
+        const srcReg = parseInt(parts[1].substring(1)); // Extract source number
+        const destReg = parseInt(parts[2].substring(1)); // Extract destination number
+
+        registers[destReg] = registers[srcReg];
+      }
+
+      function storeCommand(parts, registers) {
+        const value = parseInt(parts[1]);
+        const destReg = parseInt(parts[2].substring(1)); // Extract destination number to override
+
+        registers[destReg] = value;
+      }
+
     });
-    return decodedMessages;
-  } catch (err) {
-    console.error('Error decoding messages:', err);
-    return [];
+  } catch (error) {
+    console.error('Error:', error);
   }
-}
 ```
-
-**Command Execution:**
-The `executeCommand` function breaks down instructions and executes the appropriate operation:
+sometimes the websocket fails to open mainly due to network situation. In this case, we retry
 ```javascript
-function executeCommand(command) {
-  const parts = command.replace(/"/g, '').split(' ');
-  const opcode = parts[0];
-
-  switch (opcode) {
-    case 'ADD':
-      addCommand(parts);
-      break;
-    case 'MOV':
-      moveCommand(parts);
-      break;
-    case 'STORE':
-      storeCommand(parts);
-      break;
-    default:
-      console.error(`Unknown instruction: ${command}`);
+  if (!ableToFetch) {
+    await browser.close();
+    fetchMessages();
   }
-
-  console.log({instruction: command},{registers});
-}
-
-function addCommand(parts) {
-  const value = parseInt(parts[1]);
-  const srcReg = parseInt(parts[2].substring(1));
-  const destReg = parseInt(parts[3].substring(1));
-
-  registers[destReg] = registers[srcReg] + value;
-}
-
-function moveCommand(parts) {
-  const srcReg = parseInt(parts[1].substring(1));
-  const destReg = parseInt(parts[2].substring(1));
-
-  registers[destReg] = registers[srcReg];
-}
-
-function storeCommand(parts) {
-  const value = parseInt(parts[1]);
-  const destReg = parseInt(parts[2].substring(1));
-
-  registers[destReg] = value;
-}
 ```
 
-### Execution
-Finally, the program is executed by calling the `fetchMessages` function:
-```javascript
-fetchMessages();
-```
+### Resulting Data from the challenge
+`Correct! Send the following hash along with your name to Longshot: 
+d50749a1866f88f9cff2bdd137b845170f9623f7645a63efcc55728f63f658ad`
+
 
 ### Conclusion
 With this approach, I was able to successfully automate the interaction with the challenge webpage, handle WebSocket communications, decode and process these commands, and ultimately calculate a Base64 string which is sent back to the server. Each step is handled with detailed logging to ensure transparency and ease of debugging.
