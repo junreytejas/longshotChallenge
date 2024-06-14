@@ -113,7 +113,7 @@ const browser = await puppeteer.launch({
   });
 ```
 #### Phase 1: 
-Automates capturing the data from the dom, filling up the 'answer' and 'name' fields in the form, and then hitting the submit button 
+Automates capturing the data from the dom, filling up the `answer` and `name` fields in the form, and then hitting the submit button 
 ```javascript
   await page.goto('https://challenge.longshotsystems.co.uk/go');
 
@@ -147,7 +147,7 @@ Initialize the registers using Array and fill them with zero values
 ```
 Added event listener for websocket incoming message
 1. decodes the received message
-2. check if the message contains "END"
+2. check if the message contains `"END"`
 3. if it does:
    - sum the registers using `reduce()` function
    - encode the result back to Base64
