@@ -89,7 +89,7 @@ const puppeteer = require('puppeteer');
 ```
 
 #### Main Function: `fetchMessages`
-The `fetchMessages` function is the core of the solution wraps the entire web scraping logic/commands:
+The `fetchMessages` function is the core of the solution that wraps the entire web scraping logic/commands:
 ```javascript
 async function fetchMessages() 
 ```
@@ -248,4 +248,4 @@ d50749a1866f88f9cff2bdd137b845170f9623f7645a63efcc55728f63f658ad`
 
 
 ### Conclusion
-With this approach, I was able to successfully automate the interaction with the challenge webpage, handle WebSocket communications, decode and process these commands, and ultimately calculate a Base64 string which is sent back to the server. Each step is handled with detailed logging to ensure transparency and ease of debugging.
+With this approach, I was able to successfully automate the interaction with the challenge webpage, handle WebSocket communications, decode and process these commands, and ultimately calculate a Base64 string which is sent back to the server. 
